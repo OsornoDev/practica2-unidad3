@@ -27,7 +27,8 @@ jobs:
       run: docker build -t demo-app:latest ./app
 
     - name: Load image into k3s
-      run: k3s ctr images import <(docker save demo-app:latest)
+      run: |
+        sudo k3s ctr images import <(docker save demo-app:latest)
 
     - name: Deploy to k3s
       run: |
