@@ -15,8 +15,10 @@ jobs:
     - name: Install k3s
       run: |
         curl -sfL https://get.k3s.io | sh -
-        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-        echo "KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> $GITHUB_ENV
+        mkdir -p ~/.kube
+        sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+        sudo chown $USER:$USER ~/.kube/config
+        echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
 
     - name: Create namespace
       run: kubectl apply -f k8s/namespace.yaml
