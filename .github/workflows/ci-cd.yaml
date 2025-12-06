@@ -28,7 +28,8 @@ jobs:
 
     - name: Load image into k3s
       run: |
-        sudo k3s ctr images import <(docker save demo-app:latest)
+        docker save demo-app:latest -o image.tar
+        sudo k3s ctr images import image.tar
 
     - name: Deploy to k3s
       run: |
