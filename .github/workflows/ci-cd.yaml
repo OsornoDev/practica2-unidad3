@@ -1,0 +1,50 @@
+name: CI-CD K3S Easy Mode
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      
+    - name: Install k3s
+      run: |
+        curl -sfL https://get.k3s.io | sh -
+        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        echo "KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> $GITHUB_ENV
+
+    - name: Create namespace
+      run: kubectl apply -f k8s/namespace.yaml
+
+    - name: Build Docker image
+      run: docker build -t demo-app:latest ./app
+
+    - name: Load image into k3s
+      run: k3s ctr images import <(docker save demo-app:latest)
+
+    - name: Deploy to k3s
+      run: |
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+        kubectl apply -f k8s/ingress.yaml
+
+    - name: Run release tests
+      run: bash release-env/run-tests.sh
+
+    - name: Check metrics (rollback)
+      run: |
+        RESULT=$(bash metrics/simulate-metrics.sh | tail -1)
+        if [ "$RESULT" = "UNHEALTHY" ]; then
+          echo "Rollback ejecutado por métricas!"
+          kubectl rollout undo deployment/demo-app -n production
+          exit 1
+        fi
+
+    - name: SUCCESS
+      run: echo "Despliegue completado correctamente."
