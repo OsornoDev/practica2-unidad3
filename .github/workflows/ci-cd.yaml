@@ -45,10 +45,19 @@ jobs:
       run: |
         RESULT=$(bash metrics/simulate-metrics.sh | tail -1)
         if [ "$RESULT" = "UNHEALTHY" ]; then
-          echo "Rollback ejecutado por métricas!"
-          kubectl rollout undo deployment/demo-app -n production
+          echo "Rollback activado por métricas"
+
+          # Comprobar si existe historial de rollouts
+          if kubectl rollout history deployment/demo-app -n production | grep -q "deployment.apps/demo-app"; then
+            echo "Ejecutando rollback..."
+            kubectl rollout undo deployment/demo-app -n production
+          else
+            echo "No hay historial de rollouts. Se omite rollback."
+          fi
+
           exit 1
         fi
+
 
     - name: SUCCESS
       run: echo "Despliegue completado correctamente."
